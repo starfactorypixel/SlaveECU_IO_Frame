@@ -33,42 +33,42 @@ namespace Analog
 		{
 			case 0:
 			{
-				CANLib::obj_in_1.SetValue(0, value, CAN_TIMER_TYPE_NORMAL);
+
 				break;
 			}
 			case 1:
 			{
-				CANLib::obj_in_2.SetValue(0, value, CAN_TIMER_TYPE_NORMAL);
+
 				break;
 			}
 			case 2:
 			{
-				CANLib::obj_in_3.SetValue(0, value, CAN_TIMER_TYPE_NORMAL);
+
 				break;
 			}
 			case 3:
 			{
-				CANLib::obj_in_4.SetValue(0, value, CAN_TIMER_TYPE_NORMAL);
+
 				break;
 			}
 			case 4:
 			{
-				CANLib::obj_in_5.SetValue(0, value, CAN_TIMER_TYPE_NORMAL);
+
 				break;
 			}
 			case 5:
 			{
-				CANLib::obj_in_6.SetValue(0, value, CAN_TIMER_TYPE_NORMAL);
+
 				break;
 			}
 			case 6:
 			{
-				CANLib::obj_in_7.SetValue(0, value, CAN_TIMER_TYPE_NORMAL);
+
 				break;
 			}
 			case 7:
 			{
-				CANLib::obj_in_8.SetValue(0, value, CAN_TIMER_TYPE_NORMAL);
+				
 				break;
 			}
 			case 14:

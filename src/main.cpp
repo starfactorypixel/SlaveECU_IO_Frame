@@ -8,6 +8,7 @@
 #include "OutputLogic.h"
 #include "CANLogic.h"
 #include <Analog.h>
+#include "Suspension.h"
 
 ADC_HandleTypeDef hadc1;
 CAN_HandleTypeDef hcan;
@@ -103,6 +104,7 @@ int main(void)
 	SPI::Setup();
 	CANLib::Setup();
 	Analog::Setup();
+	Suspension::Setup();
 	Outputs::Setup();
 	
 	uint32_t current_time = HAL_GetTick();
@@ -116,6 +118,7 @@ int main(void)
 		SPI::Loop(current_time);
 		CANLib::Loop(current_time);
 		Analog::Loop(current_time);
+		Suspension::Loop(current_time);
 		Outputs::Loop(current_time);
 	}
 }
