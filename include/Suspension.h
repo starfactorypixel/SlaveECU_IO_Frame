@@ -4,7 +4,10 @@
 namespace Suspension
 {
 	static constexpr uint16_t HYST_PRESSURE = 50;
-	static constexpr uint16_t COMP_TIMEOUT = 2 * 60;
+	//static constexpr uint16_t COMP_TIMEOUT = 2 * 60;
+
+	auto *CFG = &Config::config.data.suspension;
+
 
 	enum state_t : uint8_t
 	{
@@ -25,12 +28,12 @@ namespace Suspension
 	};
 	
 	state_t state = STATE_NONE;
-	mode_t mode = MODE_OFF;
-	uint16_t pressure = 0;
-	uint16_t target_pressure = 0;
+	//mode_t mode = MODE_OFF;
+	//uint16_t pressure = 0;
+	//uint16_t target_pressure = 0;
 	uint16_t compressor_timeout = 0;
 
-	MovingAverage<uint16_t, uint32_t, 5> average_pressure;
+	MovingAverage<uint16_t, uint32_t, 5> pressure_average;
 
 
 
@@ -58,37 +61,37 @@ namespace Suspension
 
 	void OnChangeMode(mode_t new_mode)
 	{
-		mode = new_mode;
+		CFG->mode = new_mode;
 		
 		switch(new_mode)
 		{
 			case MODE_OFF:
 			{
-				target_pressure = Config::obj.body.suspension.target_pressure;
+				//target_pressure = CFG.pressure_target;
 				
 				break;
 			}
 			case MODE_PRESET_1:
 			{
-				target_pressure = Config::obj.body.suspension.presets[0];
+				CFG->pressure_target = CFG->presets[0];
 				
 				break;
 			}
 			case MODE_PRESET_2:
 			{
-				target_pressure = Config::obj.body.suspension.presets[1];
+				CFG->pressure_target = CFG->presets[1];
 				
 				break;
 			}
 			case MODE_PRESET_3:
 			{
-				target_pressure = Config::obj.body.suspension.presets[2];
+				CFG->pressure_target = CFG->presets[2];
 				
 				break;
 			}
 			case MODE_CUSTOM:
 			{
-				target_pressure = Config::obj.body.suspension.target_pressure;
+				//target_pressure = CFG.pressure_target;
 				
 				break;
 			}
@@ -115,9 +118,9 @@ namespace Suspension
 		
 		CANLib::obj_suspension_value.RegisterFunctionSet([](can_frame_t &can_frame, can_error_t &error) -> can_result_t
 		{
-			if(mode == MODE_CUSTOM)
+			if(CFG->mode == MODE_CUSTOM)
 			{
-				target_pressure = (can_frame.data[0] || (uint16_t)(can_frame.data[1] << 8));
+				CFG->pressure_target = (can_frame.data[0] || (uint16_t)(can_frame.data[1] << 8));
 
 				can_frame.function_id = CAN_FUNC_EVENT_OK;
 			}
@@ -129,7 +132,7 @@ namespace Suspension
 			return CAN_RESULT_CAN_FRAME;
 		});
 
-		OnChangeMode( (mode_t)Config::obj.body.suspension.mode );
+		OnChangeMode( (mode_t)CFG->mode );
 		
 		return;
 	}
@@ -141,9 +144,9 @@ namespace Suspension
 		{
 			last_tick_pressure = current_time;
 
-			average_pressure.Push( GetPressure() );
+			pressure_average.Push( GetPressure() );
 
-			CANLib::obj_suspension_pressure.SetValue(0, average_pressure.Get(), CAN_TIMER_TYPE_NORMAL);
+			CANLib::obj_suspension_pressure.SetValue(0, pressure_average.Get(), CAN_TIMER_TYPE_NORMAL);
 		}
 
 		static uint32_t last_tick_logic = 0;
@@ -151,9 +154,9 @@ namespace Suspension
 		{
 			last_tick_logic = current_time;
 
-			if(mode != MODE_OFF)
+			if(CFG->mode != MODE_OFF)
 			{
-				if( average_pressure.Get() > target_pressure + HYST_PRESSURE )
+				if( pressure_average.Get() > CFG->pressure_target + HYST_PRESSURE )
 				{
 					if(state != STATE_DRAINVALVE_ON)
 					{
@@ -164,7 +167,7 @@ namespace Suspension
 						state = STATE_DRAINVALVE_ON;
 					}
 				}
-				else if( average_pressure.Get() + HYST_PRESSURE < target_pressure )
+				else if( pressure_average.Get() + HYST_PRESSURE < CFG->pressure_target )
 				{
 					if(state != STATE_COMPRESSOR_ON)
 					{
@@ -175,9 +178,9 @@ namespace Suspension
 					}
 					else
 					{
-						if(++compressor_timeout == COMP_TIMEOUT)
+						if(++compressor_timeout == CFG->compressor_runtime)
 						{
-							mode = MODE_OFF;
+							CFG->mode = MODE_OFF;
 
 							// CANEvent что компрессор работал долго и вырубился
 						}
@@ -185,7 +188,7 @@ namespace Suspension
 				}
 				else
 				{
-					if(state == STATE_COMPRESSOR_ON && average_pressure.Get() >= target_pressure)
+					if(state == STATE_COMPRESSOR_ON && pressure_average.Get() >= CFG->pressure_target)
 					{
 						CompressorCtrl(0);
 
@@ -193,7 +196,7 @@ namespace Suspension
 						state = STATE_NONE;
 					}
 					
-					if(state == STATE_DRAINVALVE_ON && average_pressure.Get() <= target_pressure)
+					if(state == STATE_DRAINVALVE_ON && pressure_average.Get() <= CFG->pressure_target)
 					{
 						DrainValveCrtl(0);
 
