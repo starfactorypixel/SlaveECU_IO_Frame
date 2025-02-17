@@ -100,7 +100,22 @@ namespace Suspension
 				break;
 			}
 		}
+
+		CANLib::obj_suspension_mode.SetValue(0, CFG->mode, CAN_TIMER_TYPE_NONE, CAN_EVENT_TYPE_NORMAL);
+
+		uint8_t tmp = map<uint16_t>(CFG->pressure_target, CFG->presets[0], CFG->presets[sizeofarray(CFG->presets)-1], 0, 255);
+		CANLib::obj_suspension_value.SetValue(0, tmp, CAN_TIMER_TYPE_NONE, CAN_EVENT_TYPE_NORMAL);
 		
+		return;
+	}
+
+	void OnChangeValue(uint8_t value)
+	{
+		CFG->pressure_target = map<uint16_t>(value, 0, 255, CFG->presets[0], CFG->presets[sizeofarray(CFG->presets)-1]);
+
+		//uint8_t tmp = map<uint16_t>(CFG->pressure_target, CFG->presets[0], CFG->presets[sizeofarray(CFG->presets)-1], 0, 255);
+		CANLib::obj_suspension_value.SetValue(0, value, CAN_TIMER_TYPE_NONE, CAN_EVENT_TYPE_NORMAL);
+
 		return;
 	}
 	
@@ -115,13 +130,13 @@ namespace Suspension
 			can_frame.function_id = CAN_FUNC_EVENT_OK;
 			return CAN_RESULT_CAN_FRAME;
 		});
-		
+
 		CANLib::obj_suspension_value.RegisterFunctionSet([](can_frame_t &can_frame, can_error_t &error) -> can_result_t
 		{
 			if(CFG->mode == MODE_CUSTOM)
 			{
-				CFG->pressure_target = (can_frame.data[0] || (uint16_t)(can_frame.data[1] << 8));
-
+				OnChangeValue(can_frame.data[0]);
+				
 				can_frame.function_id = CAN_FUNC_EVENT_OK;
 			}
 			else
@@ -133,6 +148,7 @@ namespace Suspension
 		});
 
 		OnChangeMode( (mode_t)CFG->mode );
+		pressure_average.Set( CFG->pressure_target );
 		
 		return;
 	}
