@@ -103,7 +103,7 @@ namespace Suspension
 
 		CANLib::obj_suspension_mode.SetValue(0, CFG->mode, CAN_TIMER_TYPE_NONE, CAN_EVENT_TYPE_NORMAL);
 
-		uint8_t tmp = map<uint16_t>(CFG->pressure_target, CFG->presets[0], CFG->presets[sizeofarray(CFG->presets)-1], 0, 255);
+		uint8_t tmp = map<uint16_t>(CFG->pressure_target, 0, CFG->presets[sizeofarray(CFG->presets)-1], 0, 255);
 		CANLib::obj_suspension_value.SetValue(0, tmp, CAN_TIMER_TYPE_NONE, CAN_EVENT_TYPE_NORMAL);
 		
 		return;
@@ -111,7 +111,7 @@ namespace Suspension
 
 	void OnChangeValue(uint8_t value)
 	{
-		CFG->pressure_target = map<uint16_t>(value, 0, 255, CFG->presets[0], CFG->presets[sizeofarray(CFG->presets)-1]);
+		CFG->pressure_target = map<uint16_t>(value, 0, 255, 0, CFG->presets[sizeofarray(CFG->presets)-1]);
 
 		//uint8_t tmp = map<uint16_t>(CFG->pressure_target, CFG->presets[0], CFG->presets[sizeofarray(CFG->presets)-1], 0, 255);
 		CANLib::obj_suspension_value.SetValue(0, value, CAN_TIMER_TYPE_NONE, CAN_EVENT_TYPE_NORMAL);
