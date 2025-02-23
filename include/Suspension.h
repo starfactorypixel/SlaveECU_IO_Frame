@@ -5,6 +5,7 @@ namespace Suspension
 {
 	static constexpr uint16_t HYST_PRESSURE = 50;
 	//static constexpr uint16_t COMP_TIMEOUT = 2 * 60;
+	static constexpr uint32_t TICK_TIME = 100;
 
 	auto *CFG = &Config::config.data.suspension;
 
@@ -33,7 +34,7 @@ namespace Suspension
 	//uint16_t target_pressure = 0;
 	uint16_t compressor_timeout = 0;
 
-	MovingAverage<uint16_t, uint32_t, 5> pressure_average;
+	MovingAverage<uint16_t, uint32_t, 3> pressure_average;
 
 
 
@@ -118,6 +119,14 @@ namespace Suspension
 
 		return;
 	}
+
+	void OnSensorRead(uint16_t value)
+	{
+		pressure_average.Push(value);
+		CANLib::obj_suspension_pressure.SetValue(0, pressure_average.Get(), CAN_TIMER_TYPE_NORMAL);
+		
+		return;
+	}
 	
 	
 	
@@ -155,8 +164,9 @@ namespace Suspension
 	
 	inline void Loop(uint32_t &current_time)
 	{
+/*
 		static uint32_t last_tick_pressure = 0;
-		if(current_time - last_tick_pressure > 200)
+		if(current_time - last_tick_pressure > 50)
 		{
 			last_tick_pressure = current_time;
 
@@ -164,9 +174,9 @@ namespace Suspension
 
 			CANLib::obj_suspension_pressure.SetValue(0, pressure_average.Get(), CAN_TIMER_TYPE_NORMAL);
 		}
-
+*/
 		static uint32_t last_tick_logic = 0;
-		if(current_time - last_tick_logic > 1000)
+		if(current_time - last_tick_logic > TICK_TIME)
 		{
 			last_tick_logic = current_time;
 
@@ -183,7 +193,7 @@ namespace Suspension
 						state = STATE_DRAINVALVE_ON;
 					}
 				}
-				else if( pressure_average.Get() + HYST_PRESSURE < CFG->pressure_target )
+				else if( pressure_average.Get() + (HYST_PRESSURE / 2) < CFG->pressure_target )
 				{
 					if(state != STATE_COMPRESSOR_ON)
 					{
@@ -194,7 +204,7 @@ namespace Suspension
 					}
 					else
 					{
-						if(++compressor_timeout == CFG->compressor_runtime)
+						if(++compressor_timeout == CFG->compressor_runtime * (1000 / TICK_TIME))
 						{
 							CFG->mode = MODE_OFF;
 
@@ -204,7 +214,7 @@ namespace Suspension
 				}
 				else
 				{
-					if(state == STATE_COMPRESSOR_ON && pressure_average.Get() >= CFG->pressure_target)
+					if(state == STATE_COMPRESSOR_ON && pressure_average.Get() >= CFG->pressure_target + (HYST_PRESSURE / 2))
 					{
 						CompressorCtrl(0);
 
@@ -212,7 +222,7 @@ namespace Suspension
 						state = STATE_NONE;
 					}
 					
-					if(state == STATE_DRAINVALVE_ON && pressure_average.Get() <= CFG->pressure_target)
+					if(state == STATE_DRAINVALVE_ON && pressure_average.Get() <= CFG->pressure_target + HYST_PRESSURE)
 					{
 						DrainValveCrtl(0);
 

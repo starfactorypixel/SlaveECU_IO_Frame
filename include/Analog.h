@@ -6,6 +6,11 @@
 
 extern ADC_HandleTypeDef hadc1;
 
+namespace Suspension
+{
+	void OnSensorRead(uint16_t value);
+}
+
 namespace Analog
 {
 	uint16_t OnMuxRequest(uint8_t address);
@@ -20,8 +25,8 @@ namespace Analog
 		EasyPinD::d_pin_t{GPIOB, GPIO_PIN_6}, 
 		EasyPinD::d_pin_t{GPIOB, GPIO_PIN_7}
 	);
-	
-	
+
+
 	uint16_t OnMuxRequest(uint8_t address)
 	{
 		return adc_pin.Get();
@@ -48,7 +53,8 @@ namespace Analog
 			}
 			case 3:
 			{
-
+				Suspension::OnSensorRead(value);
+				
 				break;
 			}
 			case 4:
@@ -100,6 +106,7 @@ namespace Analog
 		
 		return;
 	}
+	
 	
 	inline void Setup()
 	{
