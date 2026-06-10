@@ -1,13 +1,14 @@
 #include "main.h"
 #include <ConstantLibrary.h>
 #include <LoggerLibrary.h>
-#include "SPI.h"
 #include "About.h"
 #include "Leds.h"
+#include "SPI.h"
 #include <Config.h>
 #include "OutputLogic.h"
 #include "CANLogic.h"
 #include <Analog.h>
+#include <OneWire.h>
 #include "Suspension.h"
 
 ADC_HandleTypeDef hadc1;
@@ -101,6 +102,7 @@ int main(void)
 	Analog::Setup();
 	Suspension::Setup();
 	Outputs::Setup();
+	OneWire::Setup();
 	
 	uint32_t current_time = HAL_GetTick();
 	while(1)
@@ -113,6 +115,7 @@ int main(void)
 		Analog::Loop(current_time);
 		Suspension::Loop(current_time);
 		Outputs::Loop(current_time);
+		OneWire::Loop(current_time);
 	}
 }
 
