@@ -10,7 +10,7 @@ namespace Config
 	static constexpr uint16_t EEPROM_OFFSET_MAIN = 0;
 	static constexpr uint16_t DATA_SIZE = 256;
 	static constexpr uint16_t DATA_H_SIZE = 9;
-	static constexpr uint16_t DATA_PAGE_SIZE = SPI::eeprom.EEPROM_PAGE_SIZE;
+	static constexpr uint16_t DATA_PAGE_SIZE = 32;
 	static constexpr uint16_t EEPROM_OFFSET_MIRROR = DATA_SIZE + EEPROM_OFFSET_MAIN;
 	static constexpr uint32_t EEPROM_SAVE_INTERVAL = 30 * 1000;
 	static constexpr uint32_t MIRROR_TIME_SYNC = 10 * 60 * 1000;
@@ -94,7 +94,7 @@ namespace Config
 	{
 		bool result = false;
 		
-		SPI::eeprom.ReadPage(idx, ((uint8_t *) &page));
+		//SPI::eeprom.ReadPage(idx, ((uint8_t *) &page));
 		if(page.version > 0x00 && page.version < 0xFF)
 		{
 			if(CRC16_XModem( ((uint8_t *) &page), DATA_LENGTH ) == page.crc)
@@ -111,7 +111,7 @@ namespace Config
 	{
 		bool result = false;
 
-		SPI::eeprom.WritePage(idx, ((uint8_t *) &page));
+		//SPI::eeprom.WritePage(idx, ((uint8_t *) &page));
 		result = true;
 		
 		return result;
