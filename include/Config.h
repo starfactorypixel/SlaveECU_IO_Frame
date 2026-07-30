@@ -244,7 +244,7 @@ namespace Config
 		{
 			last_save_time = current_time;
 			
-			SaveConfig2(EEPROM_OFFSET_MAIN);
+			//SaveConfig2(EEPROM_OFFSET_MAIN);
 		}
 		
 		// При выходе обновляем время
