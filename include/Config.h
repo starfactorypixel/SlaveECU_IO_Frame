@@ -228,7 +228,7 @@ namespace Config
 
 
 
-		LoadConfig2(EEPROM_OFFSET_MAIN);
+		//LoadConfig2(EEPROM_OFFSET_MAIN);
 
 		DEBUG_LOG_ARRAY_HEX("EESetup", ((uint8_t *) &config), sizeof(config));
 		DEBUG_LOG_NEW_LINE();
