@@ -1,56 +1,76 @@
 #pragma once
-#include  <PowerOut.h>
+#include <PowerOutV2.h>
+//#include <CanObj/IBlockInfoSender.hpp>
+#include <CUtils.h>
 
-extern ADC_HandleTypeDef hadc1;
+//extern IBlockInfoSender &BlockInfoSender;
 
 namespace Outputs
 {
-	/* Настройки */
-	static constexpr uint8_t CFG_PortCount = 8;			// Кол-во портов управления.
-	static constexpr uint32_t CFG_RefVoltage = 3300000;	// Опорное напряжение, микровольты.
-	static constexpr uint8_t CFG_INA180_Gain = 100;		// Усиление микросхемы INA180.
-	static constexpr uint8_t CFG_ShuntResistance = 2;	// Сопротивление шунта, миллиомы.
-	/* */
+	void OnControl(uint8_t port, uint8_t id, uint8_t state);
+	uint16_t OnCurrentGet(uint8_t port, uint8_t id);
+	void OnCurrentLimit(uint8_t port, uint16_t current);
 	
-	PowerOut<CFG_PortCount> outObj(&hadc1, CFG_RefVoltage, CFG_INA180_Gain, CFG_ShuntResistance);
-	
+	PowerOutV2<8> ports(HAL_GetTick, OnControl, OnCurrentGet);
+	INACurrentCalc ina_calc(12, 3300, 2, 100);
 
-
-	void OnExternalControl(uint8_t external_id, GPIO_PinState state)
+	enum port_t : uint8_t
 	{
-		SPI::hc595.SetState(0, external_id, state);
+		PORT_NONE, 
+		PORT_1, PORT_2, PORT_3, PORT_4, 
+		PORT_5, PORT_6, PORT_7, PORT_Hi
+	};
+
+
+
+
+
+
+	void OnControl(uint8_t port, uint8_t id, uint8_t state)
+	{
+		bool new_state = (state == PowerOutBase::STATE_ON) ? false : true;
+		SPI::hc595.SetState(0, id, new_state);
 	}
 	
-	void OnShortCircuit(uint8_t num, uint16_t current)
+	uint16_t OnCurrentGet(uint8_t port, uint8_t id)
 	{
-
+		uint16_t adc = Analog::GetRegularValue(id);
+		if(port == PORT_Hi) adc *= 3;			// Добавить в INACurrentCalc чтобы принимать шунт в микроомах
+		return ina_calc.Get_mA(adc);
+	}
+	
+	void OnCurrentLimit(uint8_t port, uint16_t current)
+	{
+		//CANLib::SoftEventOutputs(CANLib::EVENT_CURR_LIMIT, port, current);
+		//BlockInfoSender.SendErrorMsg(port, 10, current);
 	}
 
+
+	
 
 	
 	
 	inline void Setup()
 	{
-		outObj.AddPort( 0, {GPIOA, GPIO_PIN_1, ADC_CHANNEL_1}, 5000 );		// Выход 1
-		outObj.AddPort( 1, {GPIOA, GPIO_PIN_2, ADC_CHANNEL_2}, 5000 );		// Выход 2
-		outObj.AddPort( 2, {GPIOA, GPIO_PIN_3, ADC_CHANNEL_3}, 5000 );		// Выход 3
-		outObj.AddPort( 3, {GPIOA, GPIO_PIN_4, ADC_CHANNEL_4}, 5000 );		// Выход 4
-		outObj.AddPort( 4, {GPIOA, GPIO_PIN_5, ADC_CHANNEL_5}, 5000 );		// Выход 5
-		outObj.AddPort( 5, {GPIOA, GPIO_PIN_6, ADC_CHANNEL_6}, 5000 );		// Выход 6
-		outObj.AddPort( 6, {GPIOA, GPIO_PIN_7, ADC_CHANNEL_7}, 5000 );		// Выход 7
-		outObj.AddPort( 7, {GPIOB, GPIO_PIN_0, ADC_CHANNEL_8}, 15000 );		// Выход HiPower-1
+		ports.SetPort(PORT_1, 0, Analog::PORT_REG1, 1000);
+		ports.SetPort(PORT_2, 1, Analog::PORT_REG2, 1000);
+		ports.SetPort(PORT_3, 2, Analog::PORT_REG3, 1000);
+		ports.SetPort(PORT_4, 3, Analog::PORT_REG4, 1000);
+		ports.SetPort(PORT_5, 4, Analog::PORT_REG5, 1000);
+		ports.SetPort(PORT_6, 5, Analog::PORT_REG6, 1000);
+		ports.SetPort(PORT_7, 6, Analog::PORT_REG7, 1000);
+		ports.SetPort(PORT_Hi, 7, Analog::PORT_REG8, 1000);
 		
-		outObj.Init();
+		ports.Init();
 
-		//outObj.On(4);
-		//outObj.On(6);
-		//outObj.Off(1);
-		outObj.RegExternalControlEvent(OnExternalControl);
-		outObj.RegShortCircuitEvent(OnShortCircuit);
-		//outObj.Current(1);
+		//ports.CtrlOn(4);
+		//ports.CtrlOn(6);
+		//ports.CtrlOff(1);
+		ports.SetCallbackCurrentLimit(OnCurrentLimit);
+		//ports.Current(1);
 
-		//outObj.SetOn(6, 250, 500);
-		//outObj.SetOn(5, 1000, 100);
+		//ports.CtrlOn(6, 250, 500);
+		//ports.CtrlOn(5, 1000, 100);
 		
 		return;
 	}
@@ -60,7 +80,7 @@ namespace Outputs
 	
 	inline void Loop(uint32_t &current_time)
 	{
-		outObj.Processing(current_time);
+		ports.Processing(current_time);
 		
 		static uint32_t last_time = 0;
 		if(current_time - last_time > 250)
@@ -72,14 +92,13 @@ namespace Outputs
 			if(test_iter == 9) test_iter = 1;
 			outObj.SetOn(test_iter);
 */			
-			for(uint8_t i = 1; i < CFG_PortCount+1; ++i)
+			for(uint8_t i = 1; i <= ports.GetPortCount(); ++i)
 			{
 				//Logger.PrintTopic("POUT").Printf("Port: %d, current: %5d;", i, outObj.GetCurrent(i)).PrintNewLine();
 			}
 		}
 		
 		current_time = HAL_GetTick();
-		
 		return;
 	}
 }

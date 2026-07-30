@@ -41,13 +41,14 @@ namespace Suspension
 	// Получить значение датчка давления
 	uint16_t GetPressure()
 	{
-		return Analog::mux.adc_value[3];
+		return Analog::GetMuxValue(Analog::PORT_IN4);
 	}
 	
 	// Управление компрессором
 	void CompressorCtrl(uint8_t state)
 	{
-		Outputs::outObj.SetWrite(8, state);
+		PowerOutBase::state_t ns = (state) ? PowerOutBase::STATE_ON : PowerOutBase::STATE_OFF;
+		Outputs::ports.CtrlWrite(Outputs::PORT_Hi, ns);
 		
 		return;
 	}
@@ -55,7 +56,8 @@ namespace Suspension
 	// Управление спускным клапаном
 	void DrainValveCrtl(uint8_t state)
 	{
-		Outputs::outObj.SetWrite(1, state);
+		PowerOutBase::state_t ns = (state) ? PowerOutBase::STATE_ON : PowerOutBase::STATE_OFF;
+		Outputs::ports.CtrlWrite(Outputs::PORT_1, ns);
 
 		return;
 	}
