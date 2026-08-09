@@ -3,9 +3,8 @@
 #include <AnalogMux.h>
 #include <DrakePinA.hpp>
 #include <DrakePinD.hpp>
-#include <CUtils.h>
+#include <CUtils_Analog.h>
 
-extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
 
 namespace Suspension
@@ -88,7 +87,7 @@ namespace Analog
 			{
 				break;
 			}
-			case 14:
+			case 8:
 			{
 				break;
 			}
@@ -124,6 +123,9 @@ namespace Analog
 			DEBUG_LOG_TOPIC("DNA", "    %04d %04d %04d %04d %04d %04d %04d %04d\n", 
 				regular_buf[0], regular_buf[1], regular_buf[2], regular_buf[3], regular_buf[4], regular_buf[5], regular_buf[6],regular_buf[7]);
 			*/
+		
+			uint16_t adc = regular_buf[0];
+			DEBUG_LOG_TOPIC("DMA", "    %04d, %4d\n", adc, GetF103Temperature(adc, 3296));
 		}
 		
 		return;
