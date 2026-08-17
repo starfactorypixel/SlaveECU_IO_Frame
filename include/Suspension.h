@@ -35,6 +35,7 @@ namespace Suspension
 	uint16_t compressor_timeout = 0;
 
 	MovingAverage<uint16_t, uint32_t, 3> pressure_average;
+	uint16_t pressure_value = 0;
 
 
 
@@ -103,11 +104,6 @@ namespace Suspension
 				break;
 			}
 		}
-
-		CANLib::obj_suspension_mode.SetValue(0, CFG->mode, CAN_TIMER_TYPE_NONE, CAN_EVENT_TYPE_NORMAL);
-
-		uint8_t tmp = map<uint16_t>(CFG->pressure_target, 0, CFG->presets[sizeofarray(CFG->presets)-1], 0, 255);
-		CANLib::obj_suspension_value.SetValue(0, tmp, CAN_TIMER_TYPE_NONE, CAN_EVENT_TYPE_NORMAL);
 		
 		return;
 	}
@@ -115,49 +111,57 @@ namespace Suspension
 	void OnChangeValue(uint8_t value)
 	{
 		CFG->pressure_target = map<uint16_t>(value, 0, 255, 0, CFG->presets[sizeofarray(CFG->presets)-1]);
-
-		//uint8_t tmp = map<uint16_t>(CFG->pressure_target, CFG->presets[0], CFG->presets[sizeofarray(CFG->presets)-1], 0, 255);
-		CANLib::obj_suspension_value.SetValue(0, value, CAN_TIMER_TYPE_NONE, CAN_EVENT_TYPE_NORMAL);
-
+		
 		return;
 	}
 
 	void OnSensorRead(uint16_t value)
 	{
 		pressure_average.Push(value);
-		CANLib::obj_suspension_pressure.SetValue(0, pressure_average.Get(), CAN_TIMER_TYPE_NORMAL);
+		pressure_value = pressure_average.Get();
 		
 		return;
 	}
+
+
+	// Команды управления через CAN //
+
+	void ChangeMode(uint8_t fId, uint8_t value)
+	{
+		if(fId != 1) return;
+		return OnChangeMode((mode_t)value);
+	}
+
+	uint8_t GetMode()
+	{
+		return CFG->mode;
+	}
+	
+	void ChangeValue(uint8_t fId, uint8_t value)
+	{
+		if(fId != 1) return;
+		if(CFG->mode == MODE_CUSTOM)
+		{
+			OnChangeValue(value);
+		}
+		else
+		{
+			// Нельзя мнять давление когда выбран присет. Переделать чтобы было можно - чтобы режим менялся на CUSTOM
+		}
+	}
+
+	uint8_t GetValue()
+	{
+		return map<uint16_t>(CFG->pressure_target, 0, CFG->presets[sizeofarray(CFG->presets)-1], 0, 255);
+	}
+
+	//  //
+
 	
 	
 	
 	inline void Setup()
 	{
-		CANLib::obj_suspension_mode.RegisterFunctionSet([](can_frame_t &can_frame, can_error_t &error) -> can_result_t
-		{
-			OnChangeMode( (mode_t)can_frame.data[0] );
-			
-			can_frame.function_id = CAN_FUNC_EVENT_OK;
-			return CAN_RESULT_CAN_FRAME;
-		});
-
-		CANLib::obj_suspension_value.RegisterFunctionSet([](can_frame_t &can_frame, can_error_t &error) -> can_result_t
-		{
-			if(CFG->mode == MODE_CUSTOM)
-			{
-				OnChangeValue(can_frame.data[0]);
-				
-				can_frame.function_id = CAN_FUNC_EVENT_OK;
-			}
-			else
-			{
-				can_frame.function_id = CAN_FUNC_EVENT_ERROR;
-			}
-			
-			return CAN_RESULT_CAN_FRAME;
-		});
-
 		OnChangeMode( (mode_t)CFG->mode );
 		pressure_average.Set( CFG->pressure_target );
 		
@@ -166,17 +170,6 @@ namespace Suspension
 	
 	inline void Loop(uint32_t &current_time)
 	{
-/*
-		static uint32_t last_tick_pressure = 0;
-		if(current_time - last_tick_pressure > 50)
-		{
-			last_tick_pressure = current_time;
-
-			pressure_average.Push( GetPressure() );
-
-			CANLib::obj_suspension_pressure.SetValue(0, pressure_average.Get(), CAN_TIMER_TYPE_NORMAL);
-		}
-*/
 		static uint32_t last_tick_logic = 0;
 		if(current_time - last_tick_logic > TICK_TIME)
 		{
