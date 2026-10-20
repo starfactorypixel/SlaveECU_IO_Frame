@@ -12,7 +12,8 @@ namespace Outputs
 	void OnCurrentLimit(uint8_t port, uint16_t current);
 	
 	PowerOutV2<8> ports(HAL_GetTick, OnControl, OnCurrentGet);
-	INACurrentCalc ina_calc(12, 3300, 2, 100);
+	INACurrentCalc ina_calc_1(12, 3300, 2000, 100);
+	INACurrentCalc ina_calc_2(12, 3300, (2000 / 3), 100);
 
 	enum port_t : uint8_t
 	{
@@ -35,8 +36,8 @@ namespace Outputs
 	uint16_t OnCurrentGet(uint8_t port, uint8_t id)
 	{
 		uint16_t adc = Analog::GetRegularValue(id);
-		if(port == PORT_Hi) adc *= 3;			// Добавить в INACurrentCalc чтобы принимать шунт в микроомах
-		return ina_calc.Get_mA(adc);
+		if(port == PORT_Hi) ina_calc_2.Get_mA(adc);
+		return ina_calc_1.Get_mA(adc);
 	}
 	
 	void OnCurrentLimit(uint8_t port, uint16_t current)
