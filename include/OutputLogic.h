@@ -36,7 +36,7 @@ namespace Outputs
 	uint16_t OnCurrentGet(uint8_t port, uint8_t id)
 	{
 		uint16_t adc = Analog::GetRegularValue(id);
-		if(port == PORT_Hi) ina_calc_2.Get_mA(adc);
+		if(port == PORT_Hi) return ina_calc_2.Get_mA(adc);
 		return ina_calc_1.Get_mA(adc);
 	}
 	
