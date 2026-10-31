@@ -4,6 +4,7 @@
 #include "CanObj/CanBlockCfg.hpp"
 #include "CanObj/CanCtrlParam.hpp"
 #include "CanObj/CanInfoParam.hpp"
+#include <CanObj/CanStreamObj.hpp>
 #include "CANFunc.h"
 #include <DrakePinD.hpp>
 
@@ -12,7 +13,7 @@ extern bool HAL_CAN_Send(can_object_id_t id, uint8_t *data, uint8_t length);
 
 namespace CANLib
 {
-	static constexpr uint8_t CFG_CANObjectsCount = 5;
+	static constexpr uint8_t CFG_CANObjectsCount = 6;
 	static constexpr uint16_t CAN_BASE_ID = 0x0240;
 	
 	DrakePinD can_rs({GPIOA, GPIO_PIN_15}, DrakePin::OutputOpenDrain, DrakePin::High);
@@ -25,6 +26,8 @@ namespace CANLib
 	CanCtrlParam<uint8_t> obj_suspension_mode(CAN_BASE_ID+4, Suspension::ChangeMode, Suspension::GetMode);
 	CanCtrlParam<uint8_t> obj_suspension_value(CAN_BASE_ID+5, Suspension::ChangeValue, Suspension::GetValue);
 	CanInfoParam<uint16_t> obj_suspension_pressure(CAN_BASE_ID+6, 500, &Suspension::pressure_value);
+	
+	CanStreamObj<int8_t, 16> obj_temperature(CAN_BASE_ID+7);
 
 	void CAN_Enable()
 	{
@@ -55,6 +58,7 @@ namespace CANLib
 		can_manager.AddObject(obj_suspension_mode);
 		can_manager.AddObject(obj_suspension_value);
 		can_manager.AddObject(obj_suspension_pressure);
+		can_manager.AddObject(obj_temperature);
 		
 		CAN_Enable();
 		
@@ -71,3 +75,4 @@ namespace CANLib
 }
 
 IBlockInfoSender &BlockInfoSender = CANLib::obj_block_info;
+ICanStream &CanTempStream = CANLib::obj_temperature;
